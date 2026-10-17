@@ -69,6 +69,9 @@ public class MapConfig {
     @Node("icon-info")
     private IconInfo iconInfo = new IconInfo();
 
+    // アイコンのファイルを探す、プラグインのフォルダ（設定には書き出さない）。
+    private transient File dataFolder;
+
     @SerializableConfig
     private class LayerInfo {
         @Comment("Name of the layer")
@@ -97,10 +100,10 @@ public class MapConfig {
         private boolean fill = true;
 
         @Node("fill-color")
-        private String fillColor = "#3388ff";
+        private String fillColor = "#FF0000";
 
         @Node("fill-opacity")
-        private double fillOpacity = 0.2;
+        private double fillOpacity = 0.35;
 
         @Comment("Use specified nation color as the fill color instead?")
         @Node("use-nation-color-fill")
@@ -114,10 +117,10 @@ public class MapConfig {
         private int strokeWeight = 3;
 
         @Node("stroke-color")
-        private String strokeColor = "#3388ff";
+        private String strokeColor = "#FF0000";
 
         @Node("stroke-opacity")
-        private double strokeOpacity = 1.0;
+        private double strokeOpacity = 0.8;
 
         @Comment("Use specified nation color as the stroke color instead?")
         @Node("use-nation-color-stroke")
@@ -125,29 +128,29 @@ public class MapConfig {
 
         @Node("use-town-color-fill")
         @Comment({"Use specified town color as the fill color instead?",
-                  "This option will take priority over the 'use-nation-color-fill' option if it is enabled."})
-        private boolean useTownColorFill = false;
+                  "This option will take priority over the 'use-nation-color-fill' option if it is enabled.",
+                  "Towns set their color in-game with /t set mapcolor <color>. A town without a color uses the nation color, then the default."})
+        private boolean useTownColorFill = true;
 
         @Node("use-town-color-stroke")
         @Comment({"Use specified town color as the stroke color instead?",
                 "This option will take priority over the 'use-nation-color-stroke' option if it is enabled."})
-        private boolean useTownColorStroke = false;
+        private boolean useTownColorStroke = true;
 
         private transient Color awtFillColor, awtStrokeColor;
     }
 
     @SerializableConfig
     private class IconInfo {
-        @Comment({"Icon for the town's homeblock. Icon must be a valid image URL.",
-                "Default Icon created by icon king1 licensed under Creative Commons 3.0",
-                "https://creativecommons.org/licenses/by/3.0/"})
+        @Comment({"Icon for the town's homeblock. An image URL, or a file path inside the plugin folder (e.g. icons/blueflag.png).",
+                "The default is the same flag icon that Dynmap-Towny uses (Map Icons Collection, CC BY-SA 3.0)."})
         @Node("town-icon")
-        private String townIconImage = "https://pics.freeicons.io/uploads/icons/png/20952957581537355851-512.png";
+        private String townIconImage = "icons/blueflag.png";
 
-        @Comment({"Icon for a town if they are the capital of the nation. Icon must be a valid image URL.",
-                "Put 'default' to use the town icon image."})
+        @Comment({"Icon for a town if they are the capital of the nation. An image URL, or a file path inside the plugin folder.",
+                "Put 'default' to use the town icon image. The default is the crown icon that Dynmap-Towny uses."})
         @Node("capital-icon")
-        private String capitalIconImage = "default";
+        private String capitalIconImage = "icons/king.png";
 
         @Comment({"Icon for an outpost claim that will appear at the location of outpost spawns. Icon must be a valid image URL.",
                 "Put 'default' to use the town icon image.",
@@ -155,13 +158,13 @@ public class MapConfig {
         @Node("outpost-icon")
         private String outpostIconImage = "default";
 
-        @Comment("Height of the icon")
+        @Comment({"Height of the icon (pixels). The default 16 is the same size that Dynmap-Towny shows its icons at."})
         @Node("icon-height")
-        private int iconSizeX = 35;
+        private int iconSizeX = 16;
 
         @Comment("Width of the icon")
         @Node("icon-width")
-        private int iconSizeY = 35;
+        private int iconSizeY = 16;
     }
 
     public List<String> getEnabledWorlds() {
@@ -247,7 +250,7 @@ public class MapConfig {
     private BufferedImage loadIcon(String type, String urlStr, Logger errorLogger) {
         URL url;
         try {
-            url = new URL(urlStr);
+            url = IconSource.resolve(urlStr, dataFolder);
         } catch (MalformedURLException ex) {
             errorLogger.log(Level.SEVERE, "Cannot load " + type + " icon due to an invalid URL!", ex);
             return null;
@@ -284,12 +287,15 @@ public class MapConfig {
             MapConfig config = new MapConfig();
             ParentConfigNode node = ClassSerializer.serializeClass(config);
             serializer.serializeToFile(configFile, node);
+            config.dataFolder = directory;
             return config;
         }
         else {
             ClassDeserializer deserializer = new ClassDeserializer();
             deserializer.setErrorLogger(errorLogger);
-            return deserializer.deserializeClassAndUpdate(configFile, MapConfig.class, serializer);
+            MapConfig loaded = deserializer.deserializeClassAndUpdate(configFile, MapConfig.class, serializer);
+            loaded.dataFolder = directory;
+            return loaded;
         }
 
     }

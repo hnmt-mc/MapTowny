@@ -38,8 +38,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -53,10 +51,10 @@ public class TownInfoManager {
     private final TextReplacement<Town> clickReplacements;
     private final TextReplacement<Town> hoverReplacements;
 
-    // Used for %founded% replacements.
-    private final SimpleDateFormat registeredTimeFormat =  new SimpleDateFormat("MMM d yyyy");
+    private final ImageSettings images;
 
-    public TownInfoManager(File dataFolder, Logger errorLogger) {
+    public TownInfoManager(File dataFolder, Logger errorLogger, ImageSettings images) {
+        this.images = images;
         final String CLICK_FILE_NAME = "click_tooltip.html";
         final String HOVER_FILE_NAME = "hover_tooltip.html";
 
@@ -106,40 +104,48 @@ public class TownInfoManager {
         register("pvp", t -> String.valueOf(t.getPermissions().pvp));
         register("explosion", t -> String.valueOf(t.getPermissions().explosion));
         register("mobs", t -> String.valueOf(t.getPermissions().mobs));
-        register("residents", t -> {
-            String residents = t.getResidents().stream().map(TownyObject::getName).collect(Collectors.joining(", "));
-            return residents.isEmpty() ? "None" : residents;
+        // ⭕/❌ で表す項目（%pvp% などの true/false は、そのまま残してある）
+        // 町長の顔・町の旗・国の旗（画像が無いときは空）
+        register("mayor_face", t -> {
+            try { return ImageHtml.img(ImageHtml.faceUrl(images.faceUrl(), t.getMayor().getUUID()), images.faceSize()); }
+            catch (RuntimeException error) { return ""; }
         });
-        register("residentdisplaynames", t -> {
-            String residents = t.getResidents()
-                    .stream()
-                    .map(r -> {
-                        Player resPlayer = r.getPlayer();
-                        return resPlayer != null ? resPlayer.getDisplayName() : r.getFormattedName();
-                    })
-                    .collect(Collectors.joining(", "));
-
-            return residents.isEmpty() ? "None" : residents;
+        // 旗を枠で囲んだ箱。町は、いつも出す（旗がなければ未設定の案内）。国は、町が国に入っているときだけ出す。
+        register("town_flag_box", t -> ImageHtml.flagBox("🏘️ 町の旗", flagImg(FlagStore.get(t), images.townFlagSize()), "/town set flag <URL>", images.townFlagSize()));
+        register("nation_flag_box", t -> !t.hasNation() ? "" : ImageHtml.flagBox("🏰 国の旗",
+                flagImg(FlagStore.get(TownyAPI.getInstance().getTownNationOrNull(t)), images.nationFlagSize()), "/nation set flag <URL>", images.nationFlagSize()));
+        register("town_flag", t -> flagImg(FlagStore.get(t), images.townFlagSize()));
+        register("nation_flag", t -> flagImg(t.hasNation() ? FlagStore.get(TownyAPI.getInstance().getTownNationOrNull(t)) : null, images.nationFlagSize()));
+        // 町のすべての役職と、その役職の人（クリックして開く欄に使う）
+        register("ranklist", t -> {
+            java.util.Map<String, java.util.List<String>> ranks = new java.util.LinkedHashMap<>();
+            for (String rank : com.palmergames.bukkit.towny.permissions.TownyPerms.getTownRanks())
+                ranks.put(rank, t.getRank(rank).stream().map(TownyObject::getName).collect(Collectors.toList()));
+            return TownTextFormat.rankList(ranks);
         });
+        register("pvp_mark", t -> TownTextFormat.mark(t.getPermissions().pvp));
+        register("firespread_mark", t -> TownTextFormat.mark(t.getPermissions().fire));
+        register("explosion_mark", t -> TownTextFormat.mark(t.getPermissions().explosion));
+        register("mobs_mark", t -> TownTextFormat.mark(t.getPermissions().mobs));
+        register("public_mark", t -> TownTextFormat.mark(t.isPublic()));
+        register("peaceful_mark", t -> TownTextFormat.mark(t.isNeutral()));
+        register("residents", t -> TownTextFormat.list(t.getResidents().stream().map(TownyObject::getName).collect(Collectors.toList())));
+        register("residentdisplaynames", t -> TownTextFormat.list(t.getResidents()
+                .stream()
+                .map(r -> {
+                    Player resPlayer = r.getPlayer();
+                    return resPlayer != null ? resPlayer.getDisplayName() : r.getFormattedName();
+                })
+                .collect(Collectors.toList())));
         register("residentcount", t -> String.valueOf(t.getNumResidents()));
         register("board", Government::getBoard);
-        register("nationstatus", t -> {
-            if (!t.hasNation())
-                return "";
-
-            final String nationName = TownyAPI.getInstance().getTownNationOrNull(t).getName();
-            return t.isCapital() ? "Capital of " + nationName : "Member of " + nationName;
-        });
+        register("nationstatus", t -> t.hasNation()
+                ? TownTextFormat.nationStatus(true, t.isCapital(), TownyAPI.getInstance().getTownNationOrNull(t).getName())
+                : "");
         register("public", t -> String.valueOf(t.isPublic()));
         register("peaceful", t -> String.valueOf(t.isNeutral()));
 
-        register("founded", t -> {
-            long founded = t.getRegistered();
-            if (founded == 0)
-                return "Not Set";
-
-            return registeredTimeFormat.format(new Date(founded));
-        });
+        register("founded", t -> TownTextFormat.founded(t.getRegistered()));
 
         registerParenthesesReplacement("nation",
                 t-> t.hasNation() ? TownyAPI.getInstance().getTownNationOrNull(t).getName() : ""
@@ -166,6 +172,11 @@ public class TownInfoManager {
         }
 
         registerRanks();
+    }
+
+    // 旗のURLを、許可したドメインのものだけ <img> にする（設定が変わったあとに、古いURLが出続けないように、表示のときにも検証する）。
+    private String flagImg(String url, int width) {
+        return url != null && ImageHtml.check(url, images.allowedDomains()) == null ? ImageHtml.imgByWidth(url, width) : "";
     }
 
     // Register a replacement that will replace parenthesis if empty.
@@ -226,8 +237,7 @@ public class TownInfoManager {
             // %rank_test% - Just need "test" part so substring at 6 and go up to the %.
             final String rank = rankReplacement.substring(6, rankReplacement.length() - 1);
             textReplacement.registerReplacement(rankReplacement, t -> {
-                String rankResidents = t.getRank(rank).stream().map(TownyObject::getName).collect(Collectors.joining(", "));
-                return rankResidents.isEmpty() ? "None" : rankResidents;
+                return TownTextFormat.list(t.getRank(rank).stream().map(TownyObject::getName).collect(Collectors.toList()));
             });
         }
     }

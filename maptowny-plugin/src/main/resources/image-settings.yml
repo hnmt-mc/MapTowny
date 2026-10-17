@@ -1,0 +1,32 @@
+# 町・国の旗の画像と、町長の顔の設定です。
+#
+# 旗の画像は、プレイヤーが /town set flag <URL>・/nation set flag <URL> で指定します。
+# 外部の画像をそのまま表示すると、不適切な画像や、見た人の情報を取る画像を貼られるので、
+# ここに書いたドメイン（とそのサブドメイン）の https の画像だけを許可します。
+# 画像サービスの「画像そのもののURL」（.png や .jpg などで終わるもの）を指定してもらいます。
+# imgur は、画像のページのURL（例: https://imgur.com/abc1234）を貼っても、画像そのもののURLに直して使います（アルバムは使えません）。
+# Discord の添付ファイルのURLは、期限が切れると見えなくなるので、初期値には入れていません。
+allowed-flag-domains:
+  - i.imgur.com
+  - i.gyazo.com
+  - i.ibb.co
+  - i.postimg.cc
+
+# 旗の画像に必要な大きさ（ピクセル）。この大きさと違う画像は、設定できません。
+# 画像の大きさは、サーバーが画像を読み込んで調べます（png・jpg・gif。webp は使えません）。
+# 0 にすると、大きさを制限しません。初期値は 330×220（縦横の比は 3:2）です。
+flag-required-width: 330
+flag-required-height: 220
+
+# 町の旗の画像を表示する幅（ピクセル。縦は画像の比のまま）。枠の中に出ます。
+town-flag-size-pixels: 240
+
+# 国の旗の画像を表示する幅（ピクセル）。町が国に入っているときだけ、町の旗の下に出ます。
+nation-flag-size-pixels: 240
+
+# 町長の顔の画像のURL。%uuid%（ハイフンなし）か %uuid_dashed%（ハイフンあり）が、町長のUUIDに置き換わります。
+# 空にすると、顔を出しません。別のサービスに変えるときは、ここだけ書き換えます。
+mayor-face-url: "https://mc-heads.net/avatar/%uuid%/64"
+
+# 町長の顔を表示する大きさ（ピクセル）。
+mayor-face-size-pixels: 64

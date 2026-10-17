@@ -44,6 +44,7 @@ public final class MapTowny extends JavaPlugin implements MapTownyPlugin {
     private TownyLayerManager layerManager;
     private MapPlatform mapPlatform;
     private MapConfig config;
+    private me.silverwolfg11.maptowny.managers.ImageSettings imageSettings;
 
     @Override
     public void onEnable() {
@@ -63,6 +64,9 @@ public final class MapTowny extends JavaPlugin implements MapTownyPlugin {
             setEnabled(false);
             return;
         }
+
+        imageSettings = me.silverwolfg11.maptowny.managers.ImageSettings.load(this);
+        saveIcons();
 
         // Try to load the map platform
         mapPlatform = loadPlatform();
@@ -85,6 +89,10 @@ public final class MapTowny extends JavaPlugin implements MapTownyPlugin {
         command.setExecutor(commandExec);
         command.setTabCompleter(commandExec);
 
+        // 町・国の旗を設定するコマンド（/town set flag、/nation set flag）
+        com.palmergames.bukkit.towny.TownyCommandAddonAPI.addSubCommand(com.palmergames.bukkit.towny.TownyCommandAddonAPI.CommandType.TOWN_SET, "flag", new FlagCommand(this, false));
+        com.palmergames.bukkit.towny.TownyCommandAddonAPI.addSubCommand(com.palmergames.bukkit.towny.TownyCommandAddonAPI.CommandType.NATION_SET, "flag", new FlagCommand(this, true));
+
         // Register listeners
         Bukkit.getPluginManager().registerEvents(new TownClaimListener(this), this);
 
@@ -99,6 +107,8 @@ public final class MapTowny extends JavaPlugin implements MapTownyPlugin {
 
     @Override
     public void onDisable() {
+        com.palmergames.bukkit.towny.TownyCommandAddonAPI.removeSubCommand(com.palmergames.bukkit.towny.TownyCommandAddonAPI.CommandType.TOWN_SET, "flag");
+        com.palmergames.bukkit.towny.TownyCommandAddonAPI.removeSubCommand(com.palmergames.bukkit.towny.TownyCommandAddonAPI.CommandType.NATION_SET, "flag");
         // Initiaize map platform shutdown
         if (mapPlatform != null)
             mapPlatform.startShutdown();
@@ -183,6 +193,16 @@ public final class MapTowny extends JavaPlugin implements MapTownyPlugin {
     }
 
     @NotNull
+    // 標準のアイコン（Dynmap-Towny と同じ旗と王冠）を、プラグインのフォルダに書き出す（すでにあれば、上書きしない）。
+    private void saveIcons() {
+        for (String name : new String[]{"icons/blueflag.png", "icons/king.png"})
+            if (!new java.io.File(getDataFolder(), name).exists()) saveResource(name, false);
+    }
+
+    public me.silverwolfg11.maptowny.managers.ImageSettings imageSettings() {
+        return imageSettings;
+    }
+
     public MapConfig config() {
         return config;
     }
@@ -201,6 +221,7 @@ public final class MapTowny extends JavaPlugin implements MapTownyPlugin {
 
     public void reload() throws IOException {
         config = MapConfig.loadConfig(getDataFolder(), getLogger());
+        imageSettings = me.silverwolfg11.maptowny.managers.ImageSettings.load(this);
         Bukkit.getScheduler().cancelTasks(this);
         layerManager.close();
         layerManager = new TownyLayerManager(this, mapPlatform);

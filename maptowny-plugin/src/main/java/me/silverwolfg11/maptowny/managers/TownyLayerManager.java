@@ -88,7 +88,7 @@ public class TownyLayerManager implements LayerManager {
 
     public TownyLayerManager(MapTowny plugin, MapPlatform platform) {
         this.plugin = plugin;
-        this.townInfoManager = new TownInfoManager(plugin.getDataFolder(), plugin.getLogger());
+        this.townInfoManager = new TownInfoManager(plugin.getDataFolder(), plugin.getLogger(), plugin.imageSettings());
         this.mapPlatform = platform;
         // Schedule initialization
         mapPlatform.onFirstInitialize(this::initialize);

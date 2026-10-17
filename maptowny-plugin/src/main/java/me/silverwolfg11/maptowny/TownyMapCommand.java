@@ -56,7 +56,7 @@ public class TownyMapCommand implements TabExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        final String usageMsg = ChatColor.RED + "Usage: /" + label + " [reload/render/unrender]";
+        final String usageMsg = ChatColor.RED + "Usage: /" + label + " [reload/render/unrender/flag]";
 
         if (args.length < 1) {
             sendMsg(sender, usageMsg);
@@ -75,12 +75,42 @@ public class TownyMapCommand implements TabExecutor {
             case "unrender":
                 unrenderTown(sender, label, args);
                 break;
+            case "flag":
+                clearFlag(sender, label, args);
+                break;
             default:
                 sendMsg(sender, usageMsg);
                 break;
         }
 
         return true;
+    }
+
+    // /maptowny flag clear <town|nation> <名前>: 運営が、町・国の旗を消す。
+    private void clearFlag(CommandSender sender, String label, String[] args) {
+        if (!sender.hasPermission(PERM_PREFIX + "flag.admin")) {
+            sendMsg(sender, PERM_DENY_MSG);
+            return;
+        }
+
+        if (args.length != 4 || !args[1].equalsIgnoreCase("clear") || !(args[2].equalsIgnoreCase("town") || args[2].equalsIgnoreCase("nation"))) {
+            sendMsg(sender, ChatColor.RED + "使い方: /" + label + " flag clear <town|nation> <名前>");
+            return;
+        }
+
+        if (args[2].equalsIgnoreCase("town")) {
+            Town town = TownyAPI.getInstance().getTown(args[3]);
+            if (town == null) { sendMsg(sender, ChatColor.RED + "その町は見つかりません"); return; }
+            me.silverwolfg11.maptowny.managers.FlagStore.clear(town);
+            plugin.getLayerManager().renderTown(town);
+            sendMsg(sender, ChatColor.GREEN + "町「" + town.getName() + "」の旗を消しました");
+        } else {
+            com.palmergames.bukkit.towny.object.Nation nation = TownyAPI.getInstance().getNation(args[3]);
+            if (nation == null) { sendMsg(sender, ChatColor.RED + "その国は見つかりません"); return; }
+            me.silverwolfg11.maptowny.managers.FlagStore.clear(nation);
+            nation.getTowns().forEach(t -> plugin.getLayerManager().renderTown(t));
+            sendMsg(sender, ChatColor.GREEN + "国「" + nation.getName() + "」の旗を消しました");
+        }
     }
 
     private void renderTown(CommandSender sender, String label, String[] args) {

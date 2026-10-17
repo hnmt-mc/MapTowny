@@ -21,6 +21,7 @@ permissions:
       maptowny.reload: true
       maptowny.render: true
       maptowny.unrender: true
+      maptowny.flag.admin: true
 
   maptowny.use:
     description: Permission to use the MapTowny command
@@ -36,4 +37,16 @@ permissions:
 
   maptowny.unrender:
     description: Allows access to sub-cmd to unrender a town on the web-map.
+    default: op
+
+  maptowny.flag.town:
+    description: 町長が、/town set flag で町の旗の画像を設定できる
+    default: true
+
+  maptowny.flag.nation:
+    description: 国王が、/nation set flag で国の旗の画像を設定できる
+    default: true
+
+  maptowny.flag.admin:
+    description: 運営が、/maptowny flag clear で町・国の旗を消せる
     default: op

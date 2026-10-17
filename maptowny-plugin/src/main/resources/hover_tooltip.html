@@ -1,28 +1,35 @@
 <!--
-Placeholders:
-%town% = Town Name
-%nation% = Nation Name (if it exists or empty)
-%nationstatus% = If capital, "Capital of [Nation]", otherwise "Member of [Nation]" or empty if not in nation.
-%mayor% = Name of Mayor
-%board% = Town Board
-%public% = "true" or "false" whether the town is public.
-%peaceful% = "true" or "false" whether the town is peaceful.
-%founded% = Formatted date of when the town was founded.
-%rank_{rank name}% = Comma-separated list of residents that have the specified town rank or "None" if none exist.
-%residentcount% = Number of residents in the town.
-%residents% = Comma-separated list of all residents in the town or none
-%residentdisplaynames% = Comma-separated list of resident display names if resident online or town formatted names if offline.
+使えるプレースホルダー（置き換えられます）:
+%town% = 町の名前
+%nation% = 国の名前（国に入っていなければ空。"(%nation%)" と書くと、国があるときだけ括弧つきで出ます）
+%nationstatus% = 「〇〇の首都」「〇〇に所属」（国に入っていなければ空）
+%mayor% = 町長の名前
+%board% = 町の掲示板
+%founded% = 設立日（日本時間。例: 2026年10月17日。未設定なら「未設定」）
+%rank_{役職名}% = その役職の住民を「、」で並べたもの（いなければ「なし」）
+%residentcount% = 住民の人数
+%residents% = 住民の一覧（いなければ「なし」）
+%residentdisplaynames% = 住民の表示名の一覧（オンラインなら表示名、オフラインなら整形した名前）
+%ranklist% = 町のすべての役職と、その役職の人（HTMLの行。いなければ「役職についている人はいません」）
 
-If economy is enabled:
-%tax% = Town Tax
-%upkeep% = Town Upkeep
-%bank% = Cached Town Balance
+画像（設定は image-settings.yml。画像がなければ空）:
+%mayor_face% = 町長のスキンの顔
+%town_flag% = 町の旗の画像だけ（/town set flag で設定）
+%town_flag_box% = 町の旗（ラベルと細い枠つき。縦に積みます）（旗がなければ「未設定」の案内つき。いつも出ます）
+%nation_flag_box% = 国の旗を枠で囲んだ箱（町が国に入っているときだけ出ます）
+%nation_flag% = 国の旗（/nation set flag で設定）
 
-%pvp% = Boolean (true/false) whether pvp is enabled in the town
-%firespread% = Whether firespread is enabled in the town
-%mobs% = whether mobs are enabled in the town
-%explosion% = whether explosions are enabled in the town
+⭕/❌ で出す項目:
+%pvp_mark% %firespread_mark% %explosion_mark% %mobs_mark% %public_mark% %peaceful_mark%
+
+true/false で出す項目（以前のまま）:
+%pvp% %firespread% %explosion% %mobs% %public% %peaceful%
+
+経済が有効なときだけ使えます（無効なのに書くと「%tax%」のまま出ます）:
+%tax% = 税金 / %upkeep% = 維持費 / %bank% = 町の資金
 -->
 <div>
-    <bold>%town% (%nation%)</bold>
+    🏘️ <b>%town%</b> (%nation%)
+    <br/>
+    👑 %mayor%　👥 %residentcount%人
 </div>
