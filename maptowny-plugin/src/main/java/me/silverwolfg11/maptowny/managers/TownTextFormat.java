@@ -12,12 +12,15 @@ public final class TownTextFormat {
 
     private static final DateTimeFormatter FOUNDED = DateTimeFormatter.ofPattern("yyyy年M月d日").withZone(ZoneId.of("Asia/Tokyo"));
 
+    // プレイヤーが書ける文字（掲示板・名前など）を、HTMLに入れる前に無害にする（< > & " ' を置き換える）。nullは空。
+    public static String html(String text) { return text == null ? "" : ImageHtml.escape(text); }
+
     // 有効・無効を、⭕と❌で表す。
     public static String mark(boolean enabled) { return enabled ? "⭕" : "❌"; }
 
     // 名前の一覧を「、」で並べる。空なら「なし」。
     public static String list(Collection<String> names) {
-        return names.isEmpty() ? "なし" : names.stream().collect(Collectors.joining("、"));
+        return names.isEmpty() ? "なし" : names.stream().map(TownTextFormat::html).collect(Collectors.joining("、"));
     }
 
     // 設立日。0 は未設定。日本時間で「2026年10月17日」の形。
@@ -43,7 +46,7 @@ public final class TownTextFormat {
         StringBuilder html = new StringBuilder();
         for (java.util.Map.Entry<String, java.util.List<String>> entry : ranks.entrySet()) {
             if (entry.getValue().isEmpty()) continue;
-            html.append("<div>🛡️ ").append(rankName(entry.getKey())).append(": <b>").append(list(entry.getValue())).append("</b></div>");
+            html.append("<div>🛡️ ").append(html(rankName(entry.getKey()))).append(": <b>").append(list(entry.getValue())).append("</b></div>");
         }
         return html.length() == 0 ? "<div>役職についている人はいません</div>" : html.toString();
     }

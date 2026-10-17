@@ -87,7 +87,7 @@ public final class ImageHtml {
         return template.replace("%uuid_dashed%", uuid.toString()).replace("%uuid%", uuid.toString().replace("-", ""));
     }
 
-    static String escape(String value) {
+    public static String escape(String value) {
         return value.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;").replace("'", "&#39;");
     }
 }

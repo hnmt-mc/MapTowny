@@ -184,23 +184,29 @@ public class TownInfoManager {
     private void registerParenthesesReplacement(String key, Function<Town, String> func) {
         String wrappedKey = "%" + key + "%";
         String pKey = "(" + wrappedKey + ")";
+        Function<Town, String> escaped = t -> TownTextFormat.html(func.apply(t));   // 括弧なしで使うときも、プレイヤーが書ける文字を無害にする
         Function<Town, String> pFunc = t -> {
             String result = func.apply(t);
-            return (result != null && !result.isEmpty()) ? "(" + result + ")" : "";
+            return (result != null && !result.isEmpty()) ? "(" + TownTextFormat.html(result) + ")" : "";
         };
 
         if (!clickReplacements.registerReplacement(pKey, pFunc)) {
-            clickReplacements.registerReplacement(wrappedKey, func);
+            clickReplacements.registerReplacement(wrappedKey, escaped);
         }
 
         if (!hoverReplacements.registerReplacement(pKey, pFunc)) {
-            hoverReplacements.registerReplacement(wrappedKey, func);
+            hoverReplacements.registerReplacement(wrappedKey, escaped);
         }
     }
 
+    // すでにHTMLになっている項目（画像・旗の箱・役職の一覧）。ほかの項目は、プレイヤーが書ける文字が入るので、HTMLに入れる前に無害にする。
+    private static final java.util.Set<String> HTML_KEYS = new java.util.HashSet<>(java.util.Arrays.asList(
+            "mayor_face", "town_flag", "nation_flag", "town_flag_box", "nation_flag_box", "ranklist",
+            "residents", "residentdisplaynames"));   // 住民の一覧は、TownTextFormat.list の中で、無害にしてある
+
     private void register(String key, Function<Town, String> func) {
         String wrappedKey = "%" + key + "%";
-        registerReplacement(wrappedKey, func);
+        registerReplacement(wrappedKey, HTML_KEYS.contains(key) ? func : town -> TownTextFormat.html(func.apply(town)));
     }
 
 

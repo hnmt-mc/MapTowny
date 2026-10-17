@@ -2,7 +2,7 @@ package me.silverwolfg11.maptowny.managers;
 
 import org.junit.jupiter.api.Test;
 import java.util.List;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class TownTextFormatTest {
     @Test void marksShowEnabledAndDisabled() {
@@ -43,5 +43,23 @@ class TownTextFormatTest {
         ranks.put("custom_rank", List.of("Steve"));
         assertEquals("<div>🛡️ 補佐: <b>太郎、花子</b></div><div>🛡️ custom_rank: <b>Steve</b></div>", TownTextFormat.rankList(ranks));
         assertEquals("<div>役職についている人はいません</div>", TownTextFormat.rankList(new java.util.LinkedHashMap<>()));
+    }
+
+    @Test void playerTextIsEscapedSoItCannotInjectHtml() {
+        assertEquals("&lt;script&gt;alert(1)&lt;/script&gt;", TownTextFormat.html("<script>alert(1)</script>"));
+        assertEquals("a &amp; b &quot;c&quot; &#39;d&#39;", TownTextFormat.html("a & b \"c\" 'd'"));
+        assertEquals("", TownTextFormat.html(null));
+        assertEquals("太郎", TownTextFormat.html("太郎"));
+        assertEquals("&lt;img src=x onerror=alert(1)&gt;、花子", TownTextFormat.list(List.of("<img src=x onerror=alert(1)>", "花子")));
+    }
+
+    @Test void theRankListEscapesNamesAndRankNames() {
+        java.util.Map<String, java.util.List<String>> ranks = new java.util.LinkedHashMap<>();
+        ranks.put("<b>rank</b>", List.of("<i>evil</i>"));
+        String html = TownTextFormat.rankList(ranks);
+        assertFalse(html.contains("<i>evil"));
+        assertFalse(html.contains("<b>rank"));
+        assertTrue(html.contains("&lt;i&gt;evil&lt;/i&gt;"));
+        assertTrue(html.contains("&lt;b&gt;rank&lt;/b&gt;"));
     }
 }
